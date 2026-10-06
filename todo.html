@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talaan - To-Do List</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ========================================================= */
+        /* --- GLOBAL & RESET STYLES --- */
+        /* ========================================================= */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f7f6;
+            padding: 20px;
+        }
+
+        .phone-screen {
+            width: 100%;
+            max-width: 420px;
+            height: 800px; /* Fixed height for demo/look */
+            background: #ffffff;
+            overflow: hidden;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .todo-container {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+            overflow-y: auto;
+            padding-bottom: 80px; /* Space for FAB */
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ========================================================= */
+        /* --- TOP BAR & NAVIGATION --- */
+        /* ========================================================= */
+        .top-bar {
+            background-color: #083cb5;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .top-bar button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 5px;
+            transition: transform 0.1s;
+        }
+        .top-bar button:active {
+            transform: scale(0.9);
+        }
+
+        .top-bar h1 {
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        #back-button {
+            visibility: visible; /* Controlled by JS */
+        }
+        
+        #logout-button {
+             font-size: 0.8em;
+             font-weight: 600;
+             padding: 5px 10px;
+             border-radius: 5px;
+             background-color: #ff5d12;
+        }
+        
+        /* ========================================================= */
+        /* --- CATEGORY VIEW STYLES --- */
+        /* ========================================================= */
+        #category-view {
+            padding: 20px;
+        }
+        
+        #category-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .category-card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 15px;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid;
+            transition: transform 0.2s;
+        }
+        .category-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .category-title {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        /* ========================================================= */
+        /* --- ICON SELECTION GRID STYLES --- */
+        /* ========================================================= */
+        #icon-selector-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); /* 6 icons per row */
+            gap: 10px;
+            padding: 10px 0;
+            justify-items: center;
+        }
+
+        .icon-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #f0f4f8;
+            border: 2px solid transparent;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+            font-size: 1.2em; /* For Emojis */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .icon-option:hover {
+            background-color: #e0e6ed;
+        }
+
+        /* Style for the selected icon */
+        .icon-option.selected {
+            border-color: #083cb5; /* Primary color highlight */
+            background-color: #e0e6ed;
+            transform: scale(1.1);
+        }
+
+        /* Style for the PNG icons inside the buttons */
+        .icon-option img {
+            width: 24px;
+            height: 24px;
+            display: block;
+        }
+        
+        .task-count {
+            font-size: 0.8em;
+            color: #777;
+        }
+
+        .category-icon-img {
+            width: 30px;
+            height: 30px;
+            margin-bottom: 5px;
+        }
+        
+        .add-category-card {
+            border: 2px dashed #ccc;
+            color: #999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 120px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .add-category-card:hover {
+            background-color: #e9e9e9;
+        }
+
+        /* Category colors */
+        .personal { border-color: #ff5d12; }
+        .work { border-color: #083cb5; }
+        .study { border-color: #00b894; }
+        /* Add new category colors here if needed */
+        .new-category { border-color: #1abc9c; } 
+        
+        /* ========================================================= */
+        /* --- TASK VIEW STYLES --- */
+        /* ========================================================= */
+        #task-view {
+            padding: 20px;
+        }
+
+        #todo-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            position: relative;
+            border-left: 5px solid transparent; /* Base for category color */
+            transition: box-shadow 0.2s;
+        }
+        .task-card:hover {
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-text {
+            font-weight: 600;
+            font-size: 1em;
+            margin: 5px 0;
+            word-wrap: break-word;
+            transition: text-decoration 0.3s, color 0.3s;
+        }
+
+        .task-details {
+            font-size: 0.8em;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .category-tag {
+            font-size: 0.7em;
+            font-weight: 700;
+            padding: 3px 8px;
+            align-self: flex-start;
+            border-radius: 5px;
+            color: #fff;
+            background-color: #ccc;
+        }
+        /* Custom colors for tags (Optional, can be matched to border color) */
+        .personal .category-tag { background-color: #ff5d12; }
+        .work .category-tag { background-color: #083cb5; }
+        /* ... add other tag colors ... */
+        
+        /* Completed Styles */
+        .task-card.completed {
+            opacity: 0.6;
+            background-color: #f7f7f7;
+            order: 1; /* Pushes completed tasks to the bottom */
+        }
+        .task-card.completed .task-text {
+            text-decoration: line-through;
+            color: #999;
+        }
+        .task-card.completed .task-actions button {
+            background-color: #ccc;
+            opacity: 0.8;
+            cursor: not-allowed;
+        }
+
+        /* Urgency Styles */
+        .task-card.urgent {
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+            border-left-color: #ff0000;
+            order: -1; /* Pushes urgent tasks to the top */
+        }
+        .task-card.due-soon {
+            box-shadow: 0 0 5px rgba(255, 165, 0, 0.3);
+            border-left-color: #ffa500;
+        }
+
+        /* Task Actions */
+        .task-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .task-actions button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .edit-btn {
+            background-color: #ddd;
+            color: #333;
+        }
+        .edit-btn:hover {
+            background-color: #ccc;
+        }
+        .delete-btn {
+            background-color: #ff6b6b;
+            color: white;
+        }
+        .delete-btn:hover {
+            background-color: #ff4747;
+        }
+
+        /* ========================================================= */
+        /* --- FAB & MODAL STYLES --- */
+        /* ========================================================= */
+        #fab {
+            position: absolute;
+            bottom: 25px;
+            right: 25px;
+            width: 70px;
+            height: 70px;
+            background-color: #ff5d12;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            line-height: 70px; /* same as height */
+            font-size: 2.5em;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.2s;
+            z-index: 20;
+        }
+        #fab:hover {
+            background-color: #e64a19;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; 
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 350px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-content input, .modal-content select {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            width: 100%;
+        }
+
+        .modal-content input:focus, .modal-content select:focus {
+            border-color: #083cb5;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(8, 60, 181, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            gap: 10px;
+        }
+
+        .modal-buttons button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            flex-grow: 1;
+        }
+
+        /* ========================================================= */
+        /* --- COLOR SELECTION GRID STYLES --- */
+        /* ========================================================= */
+        #color-selector-grid {
+            display: flex; /* Use flexbox for a horizontal scrollable row */
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px 0;
+            justify-content: flex-start;
+        }
+
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent; /* Used for the selection highlight */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s, border-color 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        /* Style for the selected color */
+        .color-option.selected {
+            border-color: #083cb5; /* Primary color highlight */
+            transform: scale(1.1);
+        }
+
+        #save-task-btn, #save-category-btn {
+            background-color: #083cb5;
+            color: white;
+        }
+        #cancel-task-btn, #cancel-category-btn {
+            background-color: #ddd;
+            color: #333;
+        }
+        #search-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 0px;
+            top: 0;
+            position: static;
+            top: 40px;
+            bottom: 50px;
+            z-index: 9; 
+        }
+        #search-input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 1px solid #ccc;
+            border-radius: 15px;
+            background-color: white;
+            font-size: 1em;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+        }
+        #search-input:focus {
+            background-color: white;
+        }
+        #search-btn {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            border: none;
+            border-radius: 25%; /* Circular button */
+            background-color: #083cb5; /* Primary blue color */
+            color: white; /* White text/icon */
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 3px 8px rgba(8, 60, 181, 0.3);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        #search-btn:hover {
+            background-color: #072f8d;
+        }
+        #search-btn:active {
+            transform: scale(0.95);
+        }
+        #search-btn:before {
+            content:('🔍');
+        }
+        #todo-grid {
+            padding: 20px;
+        }
+        #search-results {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            .no-results {
+                color: #999;
+                text-align: center;
+                font-size: 0.9em;
+            }
+        }
+
+        #show-all-tasks-btn {
+            font-size: 1em;
+            flex: 1;
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 15px; 
+            background-color: #ff5d12; 
+            color: white; 
+            border: none; 
+            border-radius: 15px; 
+            font-weight: 600; 
+            cursor: pointer;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="phone-screen">
+        <div class="todo-container">
+
+            <div class="top-bar">
+                <button id="back-button" onclick="showCategories()">←</button>
+                <h1 id="task-header-title">Categories</h1>
+                <button id="logout-button" onclick="showLogoutConfirmation()">Logout</button>
+            </div>
+            <div id="category-view">
+                <p id="user-greeting" style="padding: 10px 0 5px 5px; font-size: 1.4em; color: #333; font-weight: 800;">Hello, User!</p>
+                <p id="search-section"> 
+                    <input type="text" id="search-input" placeholder="Search tasks...">
+                    <button id="search-btn" onclick="searchTasks()">🔍</button>
+                </p>
+                <button id="show-all-tasks-btn" onclick="showAllTasks()">View all tasks</button>
+                <div id="category-grid">
+                    </div>
+            </div>
+
+            <div id="task-view" class="hidden">
+                <div id="todo-grid">
+                    </div>
+            </div>
+
+            <div id="fab" onclick="openModalForNew()" style="display: none;">+</div>
+        </div>
+
+        <div id="task-modal" class="modal-overlay">
+            <div class="modal-content">
+                <h2 id="modal-title" style="text-align: center; color: #083cb5;">Add New Task</h2>
+                <input type="text" id="modal-input" placeholder="What needs to be done?" required>
+                
+                <select id="category-select">
+                    </select>
+
+                <input type="date" id="due-date-input">
+                <input type="time" id="due-time-input">
+
+                <div class="modal-buttons">
+                    <button id="cancel-task-btn" onclick="closeModal()">Cancel</button>
+                    <button id="save-task-btn" onclick="saveTaskFromModal()">Save Task</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="category-modal" class="modal-overlay">
+            <div class="modal-content">
+                <h2 style="text-align: center; color: #ff5d12;">Add New Category</h2>
+                <input type="text" id="new-category-name" placeholder="Category Name" required>
+                <label>Choose your icon:</label>
+                    <input type="hidden" id="new-category-icon" value="../Pics/idea-icon.png"> 
+                    <div id="icon-selector-grid">
+                        <!-- populated dynamically by renderIconOptions() -->
+                    </div>
+
+                <label>Choose a color:</label>
+                    <input type="hidden" id="new-category-color" value="#00bcd4"> 
+                    <div id="color-selector-grid">
+                        </div>
+
+                <div class="modal-buttons">
+                    <button id="cancel-category-btn" onclick="closeCategoryModal()">Cancel</button>
+                    <button id="save-category-btn" onclick="saveNewCategory()">Add Category</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="confirmation-modal" class="modal-overlay">
+            <div class="modal-content">
+                <h2 id="confirmation-title" style="text-align: center; color: #083cb5;">Confirm Action</h2>
+                <p id="confirmation-message" style="text-align: center; color: #555; margin: 10px 0;">Are you sure?</p>
+                <div class="modal-buttons">
+                    <button id="confirm-no-btn" onclick="closeConfirmationModal()" style="background-color: #ccc; color: #333;">No</button>
+                    <button id="confirm-yes-btn" onclick="confirmAction()" style="background-color: #083cb5; color: white;">Yes</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const API_BASE_URL = 'http://localhost:5000'; 
+        
+        // --- Global State & Initialization ---
+        let currentUserId = localStorage.getItem('talaan_userId');
+        
+        if (!currentUserId) {
+            alert('Not logged in. Redirecting to login page.');
+            window.location.href = "login.html"; // Redirect unauthenticated users
+        }
+
+        let currentCategory = null; 
+
+        // Add this array to your Global State & Initialization section (near 'let CATEGORIES = [];')
+        // NOTE: icon files are stored in the sibling `Pics/` folder — use relative paths from this file.
+        const ICON_OPTIONS = [
+            '../Pics/personal-icon.png',
+            '../Pics/work-icon.png',
+            '../Pics/study-icon.png',
+            '../Pics/home-icon.png',
+            '../Pics/others-icon.png',
+            '../Pics/idea-icon.png',
+            '../Pics/file-icon.png',
+            '../Pics/fitness-icon.png',
+            '../Pics/cart-icon.png',
+        ];
+
+        // Add DOM references (after current set)
+        const iconSelectorGrid = document.getElementById('icon-selector-grid');
+        const newCategoryIconInput = document.getElementById('new-category-icon'); // The new hidden input
+        
+        // ** CHANGE 1: CATEGORIES is now dynamic, fetched from the server **
+        let CATEGORIES = []; // This will hold the categories fetched from the API
+
+        // --- DOM Element References ---
+        const categoryGrid = document.getElementById('category-grid');
+        const todoGrid = document.getElementById('todo-grid');
+        const backButton = document.getElementById('back-button');
+        const taskHeaderTitle = document.getElementById('task-header-title');
+        const userGreeting = document.getElementById('user-greeting');
+        
+        const modal = document.getElementById('task-modal');
+        const categoryModal = document.getElementById('category-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalInput = document.getElementById('modal-input');
+        const categorySelect = document.getElementById('category-select');
+        const dueDateInput = document.getElementById('due-date-input');
+        const dueTimeInput = document.getElementById('due-time-input');
+
+        //search task
+        const searchInput = document.getElementById('search-input');
+        const clearSearchBtn = document.getElementById('clear-search-btn');
+
+        //global variable for search term
+        let searchQuery = '';
+
+        // Initial Greeting Setup
+        const username = localStorage.getItem('talaan_username') || 'User';
+        userGreeting.textContent = `Hello, ${username}!`;
+        
+        // ** NEW HELPER FUNCTION: To apply dynamic colors from the server **
+        function applyCategoryStyles(categories) {
+            let styleContent = '';
+            categories.forEach(cat => {
+                // Creates CSS rules like: .custom-category { border-color: #ff5d12; }
+                styleContent += `.${cat.colorClass} { border-color: ${cat.color}; }`;
+                // Creates CSS rules for the tag background (using the category color)
+                styleContent += `.${cat.colorClass} .category-tag { background-color: ${cat.color}; }`;
+            });
+
+            // Remove previous dynamic style block if it exists
+            let oldStyle = document.getElementById('dynamic-category-styles');
+            if (oldStyle) oldStyle.remove();
+            
+            // Create a new style block and append it to the head
+            const newStyle = document.createElement('style');
+            newStyle.type = 'text/css';
+            newStyle.id = 'dynamic-category-styles';
+            newStyle.innerHTML = styleContent;
+            document.getElementsByTagName('head')[0].appendChild(newStyle);
+        }
+
+        // Add this array near your other global definitions (e.g., CATEGORIES, ICON_OPTIONS)
+        const COLOR_PALETTE = [
+            '#00bcd4', // Teal (Default)
+            '#4caf50', // Green
+            '#ff9800', // Orange
+            '#f44336', // Red
+            '#9c27b0', // Purple
+            '#2196f3', // Blue
+            '#795548', // Brown
+            '#607d8b', // Blue Grey
+            '#ffeb3b', // Yellow
+            '#e91e63'  // Pink
+        ];
+        // Add this DOM reference near the 'iconSelectorGrid' and 'newCategoryIconInput' references
+        const colorSelectorGrid = document.getElementById('color-selector-grid');
+        const newCategoryColorInput = document.getElementById('new-category-color');
+
+        // --- NEW COLOR RENDERING FUNCTION ---
+
+        function renderColorOptions(selectedColorValue) {
+            colorSelectorGrid.innerHTML = ''; // Clear previous options
+            
+            COLOR_PALETTE.forEach(colorHex => {
+                const colorCircle = document.createElement('div');
+                colorCircle.classList.add('color-option');
+                colorCircle.style.backgroundColor = colorHex;
+                colorCircle.setAttribute('data-color', colorHex);
+
+                // Set 'selected' class if it matches the current value
+                if (colorHex === selectedColorValue) {
+                    colorCircle.classList.add('selected');
+                }
+
+                colorCircle.addEventListener('click', () => {
+                    // 1. Remove 'selected' from all others
+                    document.querySelectorAll('.color-option').forEach(btn => {
+                        btn.classList.remove('selected');
+                    });
+                    
+                    // 2. Add 'selected' to the clicked circle
+                    colorCircle.classList.add('selected');
+                    
+                    // 3. Update the hidden input value
+                    newCategoryColorInput.value = colorHex;
+                });
+
+                colorSelectorGrid.appendChild(colorCircle);
+            });
+        }
+        // --- NEW ICON RENDERING FUNCTION ---
+
+        function renderIconOptions(selectedIconValue) {
+            iconSelectorGrid.innerHTML = ''; // Clear previous options
+            
+            ICON_OPTIONS.forEach(iconValue => {
+                const iconButton = document.createElement('div');
+                iconButton.classList.add('icon-option');
+                iconButton.setAttribute('data-icon', iconValue);
+
+                // Conditional rendering for the content of the button
+                if (iconValue.endsWith('.png')) {
+                    // It's a PNG: use an <img> tag
+                    iconButton.innerHTML = `<img src="${iconValue}" alt="Icon">`;
+                } else {
+                    // It's an Emoji: insert as text
+                    iconButton.textContent = iconValue;
+                }
+
+                // Set 'selected' class if it matches the current value
+                if (iconValue === selectedIconValue) {
+                    iconButton.classList.add('selected');
+                }
+
+                iconButton.addEventListener('click', () => {
+                    // 1. Remove 'selected' from all others
+                    document.querySelectorAll('.icon-option').forEach(btn => {
+                        btn.classList.remove('selected');
+                    });
+                    
+                    // 2. Add 'selected' to the clicked button
+                    iconButton.classList.add('selected');
+                    
+                    // 3. Update the hidden input value
+                    newCategoryIconInput.value = iconValue;
+                });
+
+                iconSelectorGrid.appendChild(iconButton);
+            });
+        }
+
+        // --- Core View Navigation ---
+
+        async function showCategories() {
+            currentCategory = null;
+            document.getElementById('task-view').classList.add('hidden');
+            document.getElementById('category-view').classList.remove('hidden');
+            document.getElementById('fab').style.display = 'none';
+            taskHeaderTitle.textContent = 'Categories';
+            backButton.style.visibility = 'hidden';
+            userGreeting.style.display = 'block'; 
+            
+            await fetchCategories(); 
+
+            // ** NEW: Fallback/Check for empty categories **
+            if (CATEGORIES.length === 0) {
+                console.log("No categories found, initializing defaults.");
+                // Create the default categories list with the required API fields
+                 // UPDATED CATEGORIES ARRAY: Changed the 'icon' value to the PNG file name
+                const defaultCategories = [
+                    { name: 'Personal', icon: '../Pics/personal-icon.png', colorClass: 'personal' },
+                    { name: 'Work', icon: '../Pics/work-icon.png', colorClass: 'work' },
+                    { name: 'Study', icon: '../Pics/study-icon.png', colorClass: 'study' }
+            ]
+
+                // Loop through the defaults and save them to the server
+                for (const cat of defaultCategories) {
+                    try {
+                        await fetch(`${API_BASE_URL}/categories`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(cat)
+                        });
+                    } catch (error) {
+                        console.error("Failed to save default category:", cat.name, error);
+                    }
+                }
+                
+                // Re-fetch now that the defaults are saved
+                await fetchCategories();
+            }
+            // ** END NEW CHECK **
+
+            renderCategoryCards();
+        }
+
+        function showTasks(categoryName) {
+            currentCategory = categoryName;
+            document.getElementById('category-view').classList.add('hidden');
+            document.getElementById('task-view').classList.remove('hidden');
+            document.getElementById('fab').style.display = 'block';
+            taskHeaderTitle.textContent = categoryName;
+            backButton.style.visibility = 'visible';
+            userGreeting.style.display = 'none'; 
+            renderTasksFromStack();
+        }
+        
+        function logout() {
+            localStorage.removeItem('talaan_userId');
+            localStorage.removeItem('talaan_username');
+            window.location.href = "login.html"; 
+        }
+
+        function showLogoutConfirmation() {
+            confirmationAction = 'logout';
+            document.getElementById('confirmation-title').textContent = 'Logout?';
+            document.getElementById('confirmation-message').textContent = 'Are you sure you want to log out?';
+            document.getElementById('confirmation-modal').style.display = 'flex';
+        }
+
+        // --- API & Utility Functions ---
+        
+        // ** NEW API FUNCTION: Fetch all categories for the current user **
+        async function fetchCategories() {
+            if (!currentUserId) return [];
+            try {
+                const response = await fetch(`${API_BASE_URL}/categories/${currentUserId}`);
+                if (!response.ok) throw new Error('Failed to fetch categories');
+                
+                const fetchedCategories = await response.json();
+                CATEGORIES = fetchedCategories; // Update global state
+                applyCategoryStyles(CATEGORIES); // Apply dynamic colors
+                return CATEGORIES;
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+                // Fallback or error handling
+                CATEGORIES = []; 
+                return [];
+            }
+        }
+
+        async function fetchTasks() {
+            if (!currentUserId) return [];
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/${currentUserId}`);
+                if (!response.ok) throw new Error('Failed to fetch tasks');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+                return [];
+            }
+        }
+
+         // --- NEW UTILITY FUNCTION: Converts flat list to Tree structure ---
+        function buildTaskTree(flatTasks) {
+            const rootNodes = []; // Top-level tasks (parentId == null or undefined)
+            const nodeMap = new Map(); // Map for quick lookup by ID
+
+            // 1. Map all tasks and initialize their children array
+            flatTasks.forEach(task => {
+                // Ensure every node has a children array for the next step.
+                // It uses task._id as the map key.
+                nodeMap.set(task._id, { ...task, children: [] });
+            });
+
+            // 2. Build the hierarchy by assigning children to their parent
+            nodeMap.forEach(taskNode => {
+                // If parentId is null, undefined, or missing (falsy), the task is a root.
+                // Also check if the parent is actually in the current filtered view (nodeMap).
+                if (taskNode.parentId && nodeMap.has(taskNode.parentId)) {
+                    // Find the parent node in the map and push the current task's ID to its children array
+                    nodeMap.get(taskNode.parentId).children.push(taskNode._id);
+                } else {
+                    // This is a top-level task/root, or an 'orphan' whose parent was filtered out.
+                    rootNodes.push(taskNode._id);
+                }
+            });
+
+            return { rootNodes, nodeMap };
+        }
+
+
+        function checkUrgency(dueDate) {
+            if (!dueDate) return null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const due = new Date(dueDate);
+            due.setHours(0, 0, 0, 0);
+
+            const oneDay = 24 * 60 * 60 * 1000;
+            const diffDays = Math.round((due - today) / oneDay);
+
+            if (diffDays < 0) { // Overdue
+                return 'urgent';
+            } else if (diffDays === 0) { // Due today
+                return 'urgent';
+            } else if (diffDays === 1) {
+                return 'due-soon'; // Due tomorrow
+            }
+            return null;
+        }
+
+        function sortTasks(tasks) {
+            return tasks.sort((a, b) => {
+                // 1. Sort by Completion status (Incomplete first)
+                if (a.completed !== b.completed) {
+                    return a.completed ? 1 : -1;
+                }
+
+                // 2. Sort incomplete tasks by due date/time (FIFO: Earliest first)
+                if (!a.completed) {
+                    const dateTimeA = a.dueDate ? new Date(`${a.dueDate}T${a.dueTime || '23:59:59'}`) : null;
+                    const dateTimeB = b.dueDate ? new Date(`${b.dueDate}T${b.dueTime || '23:59:59'}`) : null;
+
+                    if (!dateTimeA && !dateTimeB) return 0;
+                    if (!dateTimeA) return 1;
+                    if (!dateTimeB) return -1;
+
+                    return dateTimeA.getTime() - dateTimeB.getTime();
+                }
+                return 0;
+            });
+        }
+
+        // --- Rendering Functions ---
+
+        // ** CHANGE 3: Renders cards based on fetched CATEGORIES **
+        async function renderCategoryCards() {
+            categoryGrid.innerHTML = '';
+            
+            const taskStack = await fetchTasks(); 
+
+            const taskCounts = CATEGORIES.map(cat => ({
+                ...cat,
+                count: taskStack.filter(t => t.category === cat.name && !t.completed).length
+            }));
+
+            taskCounts.forEach(category => {
+                const card = document.createElement('div');
+                card.classList.add('category-card', category.colorClass); // Use the server-provided class
+                card.onclick = () => showTasks(category.name);
+
+            // Conditional rendering for icon: PNG or Emoji for custom categories
+            // Normalize path: if icon is a bare filename (no '/'), assume it's in ../Pics/
+            const iconPath = (category.icon && category.icon.includes('/')) ? category.icon : `../Pics/${category.icon || ''}`;
+            const iconContent = iconPath.endsWith('.png') 
+                ? `<img src="${iconPath}" alt="${category.name} icon" class="category-icon-img">`
+                : (category.icon || '');
+
+            card.innerHTML = `
+                <span class="category-icon">${iconContent}</span>
+                <span class="category-title">${category.name}</span>
+                <span class="task-count">${category.count} active task${category.count !== 1 ? 's' : ''}</span>
+                `;
+                categoryGrid.appendChild(card);
+            });
+
+
+            // Add "Add Category" Card
+            const addCard = document.createElement('div');
+            addCard.classList.add('add-category-card');
+            addCard.textContent = '+ Add Category';
+            addCard.onclick = openCategoryModal;
+            categoryGrid.appendChild(addCard);
+        }
+
+     // --- MODIFIED RENDERING FUNCTION WITH TREE (DFS) LOGIC ---
+        async function renderTasksFromStack() {
+            todoGrid.innerHTML = '';
+
+            const taskStack = await fetchTasks();
+
+            // 1. Filter tasks based on current category or search query
+            let filteredTasks = currentCategory
+                ? taskStack.filter(task => task.category === currentCategory)
+                : taskStack;
+
+            // Apply search filter
+            if (searchQuery.trim() !== '') {
+                const query = searchQuery.toLowerCase();
+                filteredTasks = filteredTasks.filter(task =>
+                    (task.text && task.text.toLowerCase().includes(query)) ||
+                    (task.dueDate && task.dueDate.includes(query))
+                );
+            }
+            
+            // Sort all tasks before building the tree structure
+            sortTasks(filteredTasks); 
+
+            // 2. Build the Tree structure for only the filtered and sorted tasks
+            const { rootNodes, nodeMap } = buildTaskTree(filteredTasks);
+            
+            if (filteredTasks.length === 0) {
+                todoGrid.innerHTML = `
+                    <div style="text-align: center; color: #777; padding-top: 50px;">
+                        No tasks found${searchQuery ? ' for "' + searchQuery + '"' : ''}!
+                        <br>Try another keyword or clear search.
+                    </div>`;
+                return;
+            }
+
+            // 3. Define the Recursive DFS Traversal Function
+            function dfsRender(taskId, depth = 0) {
+                const task = nodeMap.get(taskId);
+                if (!task) return; 
+
+                // a. Render the current task element with indentation
+                const newTaskElement = createTaskElement(task, depth); 
+                todoGrid.appendChild(newTaskElement);
+                
+                // b. Recursively call for all children (the core of DFS)
+                task.children.forEach(childId => {
+                    if (nodeMap.has(childId)) {
+                        dfsRender(childId, depth + 1);
+                    }
+                });
+            }
+
+            // 4. Start the DFS from all root nodes
+            rootNodes.forEach(rootId => {
+                dfsRender(rootId, 0);
+            });
+        }
+
+
+        // ** CHANGE 4: createTaskElement now relies on fetched CATEGORIES for colorClass **
+        function createTaskElement(task) {
+            const card = document.createElement('div');
+            // Find the correct colorClass for styling using the fetched CATEGORIES array
+            const categoryObj = CATEGORIES.find(c => c.name === task.category);
+            // Fallback to 'other' class if category not found (e.g., deleted by user)
+            const colorClass = categoryObj ? categoryObj.colorClass : 'other'; 
+            
+            card.classList.add('task-card', colorClass);
+            card.setAttribute('data-id', task._id);
+            
+            const urgency = checkUrgency(task.dueDate);
+            if (urgency) {
+                card.classList.add(urgency);
+            }
+            if (task.completed) {
+                card.classList.add('completed');
+            }
+
+            const categoryTag = document.createElement('div');
+            categoryTag.classList.add('category-tag');
+            categoryTag.textContent = task.category;
+            
+            const textSpan = document.createElement('span');
+            textSpan.classList.add('task-text');
+            textSpan.textContent = task.text;
+            
+            const detailsSpan = document.createElement('span');
+            detailsSpan.classList.add('task-details');
+
+            let detailText = '';
+            if (task.dueDate) {
+                const date = new Date(task.dueDate + 'T00:00:00');
+                detailText += `Due: ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+            }
+            if (task.dueTime) {
+                detailText += (task.dueDate ? ' @ ' : 'Time: ') + task.dueTime;
+            }
+            detailsSpan.textContent = detailText;
+            
+            const actionGroup = document.createElement('div');
+            actionGroup.classList.add('task-actions');
+
+            const editBtn = document.createElement('button');
+            editBtn.classList.add('edit-btn');
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openModalForEdit(task);
+            });
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.classList.add('delete-btn');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.addEventListener('click', async (e) => { 
+                e.stopPropagation();
+                showDeleteConfirmation(task);
+            });
+
+            actionGroup.appendChild(editBtn);
+            actionGroup.appendChild(deleteBtn);
+
+            card.appendChild(categoryTag);
+            card.appendChild(textSpan);
+            card.appendChild(detailsSpan);
+            card.appendChild(actionGroup);
+
+            card.addEventListener('click', async () => { 
+                if (task.completed) {
+                    // Show confirmation dialog for unchecking a completed task
+                    showUncheckConfirmation(task, card);
+                    return;
+                }
+                
+                const newCompletedState = !card.classList.contains('completed');
+                
+                await updateTaskInStack({
+                    ...task,
+                    completed: newCompletedState,
+                    _id: task._id
+                });
+                
+                renderTasksFromStack(); 
+                renderCategoryCards(); 
+            });
+
+            return card;
+        }
+
+        // ** CHANGE 5: Populates select from fetched CATEGORIES **
+        function populateCategorySelect(selectedCategory = null) {
+            categorySelect.innerHTML = '';
+            CATEGORIES.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.name;
+                option.textContent = category.name;
+                if (category.name === selectedCategory) {
+                    option.selected = true;
+                }
+                categorySelect.appendChild(option);
+            });
+        }
+        
+        let pendingTask = null;
+        let pendingCard = null;
+        let confirmationAction = null; // 'uncheck' or 'delete'
+
+        function showUncheckConfirmation(task, card) {
+            pendingTask = task;
+            pendingCard = card;
+            confirmationAction = 'uncheck';
+            document.getElementById('confirmation-title').textContent = 'Bring Back Task?';
+            document.getElementById('confirmation-message').textContent = 'Are you sure you want to bring back your finished task?';
+            document.getElementById('confirmation-modal').style.display = 'flex';
+        }
+
+        function showDeleteConfirmation(task) {
+            pendingTask = task;
+            confirmationAction = 'delete';
+            document.getElementById('confirmation-title').textContent = 'Delete Task?';
+            document.getElementById('confirmation-message').textContent = `Are you sure you want to delete "${task.text}"?`;
+            document.getElementById('confirmation-modal').style.display = 'flex';
+        }
+
+        function closeConfirmationModal() {
+            document.getElementById('confirmation-modal').style.display = 'none';
+            pendingTask = null;
+            pendingCard = null;
+            confirmationAction = null;
+        }
+
+        async function confirmAction() {
+            if (confirmationAction === 'logout') {
+                logout();
+                return;
+            }
+
+            if (!pendingTask) return;
+
+            if (confirmationAction === 'uncheck') {
+                const newCompletedState = false;
+                
+                await updateTaskInStack({
+                    ...pendingTask,
+                    completed: newCompletedState,
+                    _id: pendingTask._id
+                });
+                
+                renderTasksFromStack(); 
+                renderCategoryCards();
+            } else if (confirmationAction === 'delete') {
+                await deleteTaskFromStack(pendingTask);
+            }
+
+            closeConfirmationModal();
+        }
+        
+        // --- Modal Control Functions (Unchanged) ---
+        
+        function openModal(title, saveHandler) {
+            modalTitle.textContent = title;
+            document.getElementById('save-task-btn').onclick = saveHandler;
+            populateCategorySelect(currentCategory);
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            modalInput.value = '';
+            dueDateInput.value = '';
+            dueTimeInput.value = '';
+            modal.removeAttribute('data-task-id');
+        }
+
+        function openModalForNew() {
+            openModal('Add New Task', saveTaskFromModal);
+        }
+
+        function openModalForEdit(task) {
+            modalTitle.textContent = 'Edit Task';
+            modalInput.value = task.text;
+            dueDateInput.value = task.dueDate || '';
+            dueTimeInput.value = task.dueTime || '';
+            modal.setAttribute('data-task-id', task._id);
+            populateCategorySelect(task.category);
+            document.getElementById('save-task-btn').onclick = saveTaskFromModal;
+            modal.style.display = 'flex';
+        }
+        
+        // Find and replace your existing openCategoryModal function
+        function openCategoryModal() {
+            // Reset name input
+            document.getElementById('new-category-name').value = '';
+            
+            // --- ICON INITIALIZATION (Unchanged from previous step) ---
+            newCategoryIconInput.value = ICON_OPTIONS[0]; 
+            renderIconOptions(ICON_OPTIONS[0]);
+
+            // --- COLOR INITIALIZATION (NEW) ---
+            newCategoryColorInput.value = COLOR_PALETTE[0]; // Set default color
+            renderColorOptions(COLOR_PALETTE[0]);          // Render the color grid
+
+            categoryModal.style.display = 'flex';
+        }
+
+        function closeCategoryModal() {
+            categoryModal.style.display = 'none';
+        }
+        
+        // --- Task CRUD Logic (Unchanged) ---
+        async function saveTaskFromModal() {
+            const text = modalInput.value.trim();
+            const dueDate = dueDateInput.value.trim();
+            const dueTime = dueTimeInput.value.trim();
+            const category = categorySelect.value;
+            const editingTaskId = modal.getAttribute('data-task-id');
+            
+            if (text === "") {
+                alert("Please enter a task!");
+                return;
+            }
+            
+            const taskData = {
+                userId: currentUserId,
+                text: text,
+                category: category,
+                dueDate: dueDate,
+                dueTime: dueTime,
+                completed: false,
+            };
+
+            if (editingTaskId) {
+                await updateTaskInStack({
+                    ...taskData,
+                    _id: editingTaskId, 
+                    completed: (await fetchTasks()).find(t => t._id === editingTaskId)?.completed || false 
+                });
+            } else {
+                await addTaskToStack(taskData);
+            }
+            
+            renderTasksFromStack();
+            renderCategoryCards(); 
+            closeModal();
+        }
+        
+        async function addTaskToStack(taskData) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(taskData)
+                });
+                if (!response.ok) throw new Error('Failed to add task');
+                return await response.json();
+            } catch (error) {
+                console.error('Error adding task:', error);
+            }
+        }
+
+        async function updateTaskInStack(task) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/${task._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(task)
+                });
+                if (!response.ok) throw new Error('Failed to update task');
+                return await response.json();
+            } catch (error) {
+                console.error('Error updating task:', error);
+            }
+        }
+
+        async function deleteTaskFromStack(taskToDelete) {
+            const taskId = taskToDelete._id || taskToDelete.id;
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error('Failed to delete task');
+                
+                renderTasksFromStack();
+                renderCategoryCards();
+            } catch (error) {
+                console.error('Error deleting task:', error);
+            }
+        }
+        
+        // --- Category CRUD Logic (API Integrated) ---
+
+        // ** CHANGE 6: API call to save new category **
+        async function saveNewCategory() {
+            const name = document.getElementById('new-category-name').value.trim();
+            let icon = document.getElementById('new-category-icon').value.trim() || 'others-icon.png'; // Default icon if none selected
+            // ensure icon includes a path (normalize bare filenames)
+            if (!icon.includes('/')) icon = `../Pics/${icon}`;
+            const color = document.getElementById('new-category-color').value.trim();
+            const colorClass = `custom-${name.toLowerCase().replace(/\s/g, '-')}`;
+
+            if (name === "" || color === "") {
+                alert("Please enter a category name and choose a color");
+                return;
+            }
+            
+            const categoryData = {
+                userId: currentUserId,
+                name: name,
+                icon: icon,
+                color: color,
+                colorClass: colorClass
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/categories`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(categoryData)
+                });
+
+                if (!response.ok) {
+                     const errorData = await response.json();
+                     if (response.status === 400 && errorData.error.includes('already exists')) {
+                        alert("Category name already exists for this user.");
+                     } else {
+                        throw new Error('Failed to add category');
+                     }
+                }
+                
+                // If successful, re-fetch all categories and re-render the view
+                closeCategoryModal();
+                await fetchCategories(); // Re-fetch and update global CATEGORIES array
+                renderCategoryCards();
+            } catch (error) {
+                console.error('Error adding category:', error);
+            }
+        }
+
+        // --- Search Logic ---
+        if (searchInput && clearSearchBtn) {
+            searchInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value;
+                renderTasksFromStack();
+            });
+
+            clearSearchBtn.addEventListener('click', () => {
+                searchQuery = '';
+                searchInput.value = '';
+                renderTasksFromStack();
+            });
+        }
+
+        // --- Event Listeners ---
+        window.onload = () => {
+             currentUserId = localStorage.getItem('talaan_userId');
+             if (currentUserId) {
+                 showCategories();
+             } else {
+                 console.log("User not logged in, redirecting...");
+             }
+        };
+
+        // --- UPDATED SEARCH FUNCTION ---
+        async function searchTasks() {
+            // 1. Get the current search query and clear leading/trailing space.
+            const query = document.getElementById('search-input').value.trim().toLowerCase();
+            searchQuery = query; // Update the global search state
+
+            // If the search bar is cleared, go back to the Categories view
+            if (query === '') {
+                showCategories(); 
+                return;
+            }
+
+            // 2. Fetch ALL tasks for the current user from the server
+            const allTasks = await fetchTasks();
+
+            // 3. Filter tasks based on the search query
+            const filteredTasks = allTasks.filter(task =>
+                // Match the task text OR the due date (as an example)
+                (task.text && task.text.toLowerCase().includes(query)) ||
+                (task.dueDate && task.dueDate.includes(query))
+            );
+
+            // 4. Update the UI to show Task View
+            currentCategory = null; // Clear category context
+            document.getElementById('category-view').classList.add('hidden');
+            document.getElementById('task-view').classList.remove('hidden');
+            document.getElementById('task-header-title').textContent = `Search Results for "${query}"`;
+            document.getElementById('fab').style.display = "none"; // Hide FAB in search view
+            backButton.style.visibility = 'visible';
+
+            const todoGrid = document.getElementById('todo-grid');
+            todoGrid.innerHTML = ''; // Clear previous tasks
+
+            if (filteredTasks.length === 0) {
+                todoGrid.innerHTML = `<p style="text-align:center; color:#777; padding-top: 50px;">No tasks found matching "${query}".</p>`;
+                return;
+            }
+
+            // 5. Render matching tasks using the existing function
+            sortTasks(filteredTasks);
+            
+            filteredTasks.forEach(task => {
+                const newTaskElement = createTaskElement(task);
+                todoGrid.appendChild(newTaskElement);
+            });
+        }
+
+        // --- NEW/UPDATED SEARCH AND SHOW ALL LOGIC ---
+
+        // Re-using the logic from renderTasksFromStack but without the category filter.
+        async function showAllTasks() {
+            currentCategory = null; // Clear category filter to show all tasks
+            searchQuery = ''; // Clear search query (optional, but good for cleanliness)
+            document.getElementById('search-input').value = '';
+
+            document.getElementById('category-view').classList.add('hidden');
+            document.getElementById('task-view').classList.remove('hidden');
+            document.getElementById('fab').style.display = 'block'; // Show FAB for adding new tasks
+            taskHeaderTitle.textContent = "All Tasks";
+            backButton.style.visibility = 'visible';
+            userGreeting.style.display = 'none';
+            
+            // ** CRITICAL CHANGE: Fetch all tasks from the API **
+            const allTasks = await fetchTasks(); // Fetches all tasks for current user
+            
+            // Clear existing tasks
+            todoGrid.innerHTML = '';
+            
+            let tasksToRender = allTasks;
+
+            // --- Apply search filter (if active) ---
+            if (searchQuery.trim() !== '') {
+                const query = searchQuery.toLowerCase();
+                tasksToRender = tasksToRender.filter(task =>
+                    (task.text && task.text.toLowerCase().includes(query)) ||
+                    (task.dueDate && task.dueDate.includes(query))
+                );
+            }
+            
+            sortTasks(tasksToRender);
+
+            if (tasksToRender.length === 0) {
+                todoGrid.innerHTML = `
+                    <div style="text-align: center; color: #777; padding-top: 50px;">
+                        No tasks found!
+                    </div>`;
+                return;
+            }
+
+            // Render all matching tasks using the existing helper function
+            tasksToRender.forEach(task => {
+                const newTaskElement = createTaskElement(task);
+                todoGrid.appendChild(newTaskElement);
+            });
+            renderTasksFromStack();
+        }
+
+
+
+    </script>
+</body>
+</html>
